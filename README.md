@@ -1,3 +1,94 @@
+# AI Fault Prediction — Quick Start
+
+A streamlined guide to run, use, and understand the project.
+
+- Frontend: Streamlit dashboard (professional blue/slate UI)
+- Backend: FastAPI REST API (/predict, /health)
+- Model: XGBoost/RandomForest saved as fault_prediction_model.pkl
+- Data: Uses raw, unscaled network metrics; engineered features are computed in the API
+
+## Prerequisites
+- Python 3.9+
+- Install dependencies: `pip install -r requirements.txt`
+
+## Run the services
+1) Backend (FastAPI)
+```
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+- Docs: http://127.0.0.1:8000/docs
+- Health: http://127.0.0.1:8000/
+
+2) Frontend (Streamlit)
+```
+streamlit run frontend-enhanced/app_enhanced.py --server.port 8501
+```
+- Dashboard: http://localhost:8501
+
+## API
+- POST /predict — returns prediction, fault probability, and confidence
+- GET / — returns basic health info
+
+### Request body (raw, unscaled values)
+```json
+{
+  "RSSI": -75.0,
+  "SINR": 18.0,
+  "throughput": 95.0,
+  "latency": 15.0,
+  "jitter": 3.0,
+  "packet_loss": 0.5,
+  "cpu_usage_percent": 65.0,
+  "memory_usage_percent": 60.0,
+  "active_users": 350,
+  "temperature_celsius": 45.0,
+  "hour": 14,
+  "day_of_week": 3,
+  "is_peak_hour": 1,
+  "network_quality_score": 0.75,
+  "resource_stress": 65.0
+}
+```
+
+### Response body (example)
+```json
+{
+  "prediction": "Normal",
+  "probability_faulty": 0.185,
+  "confidence_percent": 81.5
+}
+```
+
+## Frontend usage (Streamlit)
+- Manual Input tab: enter metrics with real-time status hints
+- JSON Input tab: paste the full JSON payload (as above)
+- Results: main status card, confidence gauge, fault probability bar, metrics analysis, and prediction history
+- Settings: update API base URL if backend runs on a different host/port
+
+## How it works (pipeline)
+1. Frontend sends raw metrics to the API
+2. API maps fields to training feature names and computes engineered features:
+   - efficiency_score = throughput_mbps / (latency_ms + 1)
+   - signal_ratio = sinr_db / (abs(rssi_dbm) + 1)
+   - network_load_factor = active_users / (cpu_usage_percent + 1)
+3. API aligns feature order to the model’s expected features
+4. Model predicts and API returns label, probability, and confidence
+
+## Project structure (key files)
+- app.py — FastAPI backend
+- frontend-enhanced/app_enhanced.py — Streamlit dashboard
+- ML_MODEL/fault_prediction.py — training script (saves fault_prediction_model.pkl)
+- scripts/generate_synthetic_data.py — synthetic dataset generator
+- requirements.txt — dependencies
+
+## Troubleshooting
+- API Unreachable badge: ensure backend is running on port 8000
+- 422 errors: check JSON shape and field names
+- 500 errors: verify model file exists at ML_MODEL/fault_prediction_model.pkl
+- Unexpected predictions: validate input ranges (RSSI, SINR, latency, jitter, packet loss) and consider retraining the model with updated data
+
+---
+
 # AI-Powered Fault Prediction in 5G Testbed
 
 ## 📋 Project Overview
